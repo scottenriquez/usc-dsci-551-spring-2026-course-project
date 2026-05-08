@@ -13,12 +13,12 @@ from yugabyte_db import placement
 
 class NetworkingConstruct(Construct):
     def __init__(
-        self,
-        scope: Construct,
-        construct_id: str,
-        *,
-        role: str,
-        peer_account_id: str,
+            self,
+            scope: Construct,
+            construct_id: str,
+            *,
+            role: str,
+            peer_account_id: str,
     ) -> None:
         super().__init__(scope, construct_id)
         if role not in ('primary', 'secondary'):
@@ -64,11 +64,7 @@ class NetworkingConstruct(Construct):
         else:
             self._publish_secondary_state()
 
-    # ------------------------------------------------------------------ secondary
-
     def _publish_secondary_state(self) -> None:
-        """Publish what primary needs to wire up peering and IAM."""
-        # VPC ID -- primary uses this as peer_vpc_id on CfnVPCPeeringConnection.
         vpc_id_param = ssm.StringParameter(
             self,
             'SecondaryVpcIdParameter',
@@ -77,10 +73,6 @@ class NetworkingConstruct(Construct):
             description='Secondary VPC ID for cross-region peering bootstrap',
         )
         vpc_id_param.apply_removal_policy(RemovalPolicy.DESTROY)
-
-        # Route-table IDs of each private subnet -- primary uses these as the
-        # RouteTableId argument when calling ec2:CreateRoute cross-region to
-        # add the secondary-side routes that point to the peering.
         for i, subnet in enumerate(self.private_subnets):
             rtbl_param = ssm.StringParameter(
                 self,
@@ -91,15 +83,12 @@ class NetworkingConstruct(Construct):
             )
             rtbl_param.apply_removal_policy(RemovalPolicy.DESTROY)
 
-    # ------------------------------------------------------------------ primary
-
     def _setup_primary_peering(
-        self,
-        peer_cidr: str,
-        peer_region: str,
-        peer_account_id: str,
+            self,
+            peer_cidr: str,
+            peer_region: str,
+            peer_account_id: str,
     ) -> None:
-        # ---- read what secondary published ----
         secondary_vpc_id = self._lookup_remote_ssm(
             'GetSecondaryVpcId',
             param_name=placement.SSM_SECONDARY_VPC_ID,
@@ -113,8 +102,6 @@ class NetworkingConstruct(Construct):
             )
             for i in range(3)
         ]
-
-        # ---- create the peering ----
         self.peering = ec2.CfnVPCPeeringConnection(
             self,
             'CrossRegionPeering',
@@ -123,11 +110,6 @@ class NetworkingConstruct(Construct):
             peer_region=peer_region,
             peer_owner_id=peer_account_id,
         )
-
-        # ---- accept it cross-region ----
-        # CfnVPCPeeringConnection only creates the request; cross-region
-        # same-account peering still needs an explicit acceptVpcPeeringConnection
-        # call against the peer region.
         accept = cr.AwsCustomResource(
             self,
             'AcceptCrossRegionPeering',
@@ -158,9 +140,7 @@ class NetworkingConstruct(Construct):
             timeout=Duration.minutes(2),
         )
         accept.node.add_dependency(self.peering)
-        self.peering_accept = accept  # exposed so nodes_construct can wait on it
-
-        # ---- primary-side routes (CDK native) ----
+        self.peering_accept = accept
         for i, subnet in enumerate(self.private_subnets):
             route = ec2.CfnRoute(
                 self,
@@ -171,10 +151,6 @@ class NetworkingConstruct(Construct):
             )
             route.node.add_dependency(accept)
 
-        # ---- secondary-side routes (cross-region custom resources) ----
-        # The route tables live in the secondary stack's region, so we can't
-        # add these natively. Each call is a one-shot ec2:CreateRoute SDK
-        # invocation against us-east-2; on stack delete we call DeleteRoute.
         for i, rtbl_id in enumerate(secondary_rtbl_ids):
             secondary_route = cr.AwsCustomResource(
                 self,
@@ -216,8 +192,6 @@ class NetworkingConstruct(Construct):
                 timeout=Duration.minutes(2),
             )
             secondary_route.node.add_dependency(accept)
-
-    # ------------------------------------------------------------------ helper
 
     def _lookup_remote_ssm(self, logical_id: str, *, param_name: str, region: str) -> str:
         """Cross-region SSM parameter lookup via AwsCustomResource."""
