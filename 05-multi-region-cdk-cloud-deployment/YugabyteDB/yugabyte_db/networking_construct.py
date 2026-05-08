@@ -194,7 +194,6 @@ class NetworkingConstruct(Construct):
             secondary_route.node.add_dependency(accept)
 
     def _lookup_remote_ssm(self, logical_id: str, *, param_name: str, region: str) -> str:
-        """Cross-region SSM parameter lookup via AwsCustomResource."""
         lookup = cr.AwsCustomResource(
             self,
             logical_id,
