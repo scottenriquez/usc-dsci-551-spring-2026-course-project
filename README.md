@@ -10,8 +10,8 @@ Authors:
 
 **This is the folder that graders should use to run the code locally.** Many of the other directories (e.g.,
 `01-single-region-cdk-cloud-deployment`) contain infrastructure-as-code (IaC) that requires AWS credentials to deploy
-and incurs a cost. The team is happy to provide the grader with AWS credentials upon request. This folder
-deploys containers locally for each system component and orchestrates with Docker Compose. Docker is the only software
+and incurs a cost. This folder deploys containers locally for each system component and orchestrates with Docker
+Compose. Docker is the only software
 dependency. Seed data is located in `00-local/db/sql/data.sql`.
 
 To deploy, simply run:
@@ -30,7 +30,7 @@ terminal to gracefully exit.
 > All code past this point requires AWS credentials
 
 Graders will be added to our AWS Organization via SSO. Please email one of the group members to do so. Follow the
-steps in the `/documentation` folder for detailed instructions on how to configure them on your machine.
+steps in the [documentation](./documentation) folder for detailed instructions on how to configure them on your machine.
 
 ## Folder `01-single-region-cdk-cloud-deployment`
 
@@ -52,7 +52,7 @@ cdk destroy
 
 ## Folder `02-application-schema`
 
-This contains the latest schema for the financial services application in `data.sql`. Sample data operations can be
+This contains the latest schema for the financial services application in `schema.sql`. Sample data operations can be
 found in `data.sql`.
 
 ## Folder `03-api-layer`
