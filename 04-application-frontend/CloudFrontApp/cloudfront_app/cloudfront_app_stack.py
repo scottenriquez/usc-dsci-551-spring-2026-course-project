@@ -15,32 +15,29 @@ from aws_cdk import (
     aws_s3_deployment as s3deploy,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
+    aws_ssm as ssm,
 )
 from constructs import Construct
 
 FRONTEND_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'frontend'))
+API_URL_SSM_PARAMETER = '/yugabytedb/api-url'
 
 
 @jsii.implements(ILocalBundling)
 class FrontendLocalBundling:
-    """Runs `npm ci && npm run build` on the host when npm is available.
-
-    CDK invokes `try_bundle()` first; returning False falls through to the
-    Docker image declared in `BundlingOptions` so CI machines without Node
-    installed still work.
-    """
-
-    def __init__(self, source_dir: str) -> None:
+    def __init__(self, source_dir: str, api_base_url: str) -> None:
         self.source_dir = source_dir
+        self.api_base_url = api_base_url
 
     def try_bundle(self, output_dir: str, _options: Any) -> bool:
         try:
             subprocess.check_call(['npm', '--version'], cwd=self.source_dir)
         except (FileNotFoundError, subprocess.CalledProcessError):
             return False
+        build_env = {**os.environ, 'VITE_API_BASE_URL': self.api_base_url}
         try:
-            subprocess.check_call(['npm', 'ci'], cwd=self.source_dir)
-            subprocess.check_call(['npm', 'run', 'build'], cwd=self.source_dir)
+            subprocess.check_call(['npm', 'ci'], cwd=self.source_dir, env=build_env)
+            subprocess.check_call(['npm', 'run', 'build'], cwd=self.source_dir, env=build_env)
         except subprocess.CalledProcessError:
             return False
 
@@ -60,17 +57,17 @@ class FrontendLocalBundling:
 class CloudFrontAppStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-
+        api_base_url = ssm.StringParameter.value_from_lookup(
+            self, API_URL_SSM_PARAMETER,
+        )
         bucket = s3.Bucket(
             self, 'FrontendBucket',
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
         )
-
         oai = cloudfront.OriginAccessIdentity(self, 'OAI')
         bucket.grant_read(oai)
-
         distribution = cloudfront.Distribution(
             self, 'Distribution',
             default_behavior=cloudfront.BehaviorOptions(
@@ -91,7 +88,6 @@ class CloudFrontAppStack(Stack):
                 ),
             ],
         )
-
         frontend_source = s3deploy.Source.asset(
             FRONTEND_SRC,
             exclude=['node_modules', 'dist', '.vite', 'coverage', '*.log'],
@@ -101,10 +97,10 @@ class CloudFrontAppStack(Stack):
                     'bash', '-c',
                     'npm ci && npm run build && cp -r dist/. /asset-output/',
                 ],
-                local=FrontendLocalBundling(FRONTEND_SRC),
+                environment={'VITE_API_BASE_URL': api_base_url},
+                local=FrontendLocalBundling(FRONTEND_SRC, api_base_url),
             ),
         )
-
         s3deploy.BucketDeployment(
             self, 'DeployFrontend',
             sources=[frontend_source],
@@ -112,13 +108,11 @@ class CloudFrontAppStack(Stack):
             distribution=distribution,
             distribution_paths=['/*'],
         )
-
         CfnOutput(
             self, 'DistributionDomainName',
             value=distribution.distribution_domain_name,
             description='CloudFront distribution domain name',
         )
-
         CfnOutput(
             self, 'CloudFrontURL',
             value=f'https://{distribution.distribution_domain_name}',

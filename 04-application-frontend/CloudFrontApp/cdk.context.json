@@ -1,0 +1,3 @@
+{
+  "ssm:account=639418629871:parameterName=/yugabytedb/api-url:region=us-west-2": "https://xb5uphtx9h.execute-api.us-west-2.amazonaws.com/prod"
+}

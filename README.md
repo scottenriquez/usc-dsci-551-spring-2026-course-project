@@ -37,7 +37,7 @@ steps in the [documentation](./documentation) folder for detailed instructions o
 This is an AWS CDK application used to create the three-node cluster. Use the following commands to deploy:
 
 ```shell
-cd 01-single-region-cdk-cloud-deployment
+cd 01-single-region-cdk-cloud-deployment/YugabyteDB
 python3 -m venv '.venv'
 . .venv/bin/activate
 pip install -r requirements.txt requirements-dev.txt
@@ -62,11 +62,12 @@ Secrets Manager to pull the admin credentials. An API Gateway sits in front of t
 Us the following commands to deploy:
 
 ```shell
-cd 03-api-layer 
+cd 03-api-layer/LambdasWithAPIGateway
 python3 -m venv '.venv'
 . .venv/bin/activate
 pip install -r requirements.txt requirements-dev.txt
 # note that these require valid AWS credentials and 01 to be deployed
+# Docker must also be running
 cdk synth
 cdk deploy
 # when done
@@ -78,11 +79,12 @@ cdk destroy
 This directory contains the React web frontend and a CDK application to deploy the app to Amazon's CloudFront CDN.
 
 ```shell
-cd 04-application-frontend 
+cd 04-application-frontend/CloudFrontApp 
 python3 -m venv '.venv'
 . .venv/bin/activate
 pip install -r requirements.txt requirements-dev.txt
 # note that these require valid AWS credentials and 01 and 03 to be deployed
+# Docker must also be running
 cdk synth
 cdk deploy
 # when done
@@ -95,12 +97,13 @@ This is an AWS CDK application used to create the six-node cluster across two re
 deploy:
 
 ```shell
-cd 05-multi-region-cdk-deployment
+cd 05-multi-region-cdk-deployment/YugabyteDB
 python3 -m venv '.venv'
 . .venv/bin/activate
 pip install -r requirements.txt requirements-dev.txt
 # note that these require valid AWS credentials
 cdk synth
+# --all is required since there are multiple CloudFormation stacks
 cdk deploy --all 
 # when done
 cdk destroy
