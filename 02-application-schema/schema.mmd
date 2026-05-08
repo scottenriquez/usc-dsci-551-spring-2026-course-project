@@ -1,0 +1,31 @@
+erDiagram
+  users {
+    uuid user_id PK
+    varchar email
+    text full_name
+    varchar phone
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  accounts {
+    uuid account_id PK
+    uuid user_id FK
+    text account_name
+    char currency
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  transactions {
+    uuid from_account_id FK "nullable — null for deposits"
+    uuid to_account_id FK "nullable — null for withdrawals"
+    uuid transaction_id PK
+    bigint amount_cents
+    text description
+    aws_region application_source_region
+    varchar idempotency_key
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  users ||--o{ accounts : "owns"
+  accounts ||--o{ transactions : "sends from"
+  accounts ||--o{ transactions : "receives to"

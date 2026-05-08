@@ -1,0 +1,52 @@
+services:
+  db:
+    build: ./db
+    environment:
+      POSTGRES_USER: ${DB_USER:-yugabyte}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-yugabyte}
+      POSTGRES_DB: ${DB_NAME:-yugabyte}
+      YB_BASE_DIR: /home/yugabyte/var
+      LOG_DIR: /var/log/app
+    volumes:
+      - db-data:/home/yugabyte/var
+      - app-logs:/var/log/app
+      - ./db/sql:/opt/sql:ro
+      - ./db/init:/opt/init:ro
+    ports:
+      - "${DB_PORT:-5433}:5433"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - PGPASSWORD=${DB_PASSWORD:-yugabyte} ysqlsh -h $$(hostname -i | awk '{print $$1}') -p 5433 -U ${DB_USER:-yugabyte} -d ${DB_NAME:-yugabyte} -c "SELECT 1 FROM users LIMIT 1" >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  api:
+    build: ./api
+    environment:
+      DB_HOST: db
+      DB_PORT: 5433
+      DB_USER: ${DB_USER:-yugabyte}
+      DB_PASSWORD: ${DB_PASSWORD:-yugabyte}
+      DB_NAME: ${DB_NAME:-yugabyte}
+      LOG_DIR: /var/log/app
+    volumes:
+      - app-logs:/var/log/app
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  app-logs:

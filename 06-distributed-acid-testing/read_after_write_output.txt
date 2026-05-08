@@ -1,0 +1,26 @@
+Primary (write): YugabyteDB-Primary-13579dc45361f0a9.elb.us-west-2.amazonaws.com
+Secondary (read):  YugabyteDB-Secondary-a1d1c0ae69cf23af.elb.us-east-2.amazonaws.com
+User: Neil Armstrong
+Initial deposit: $10,000.00
+
+Secondary warm-up read: started_at=2026-05-07T20:04:09.820Z  9830.31 ms
+
+Write to us-west-2 NLB
+email = neil.armstrong+18355761156c4b1487a4f138d3990ebf@usc.edu
+user_id = f6ad5cfc-166d-4e79-82b5-926d7c4d41c2
+account_id = 40a638ae-1389-4a60-a41c-0b737f38ee24
+transaction_id = 78dafdf0-d134-45ea-9d18-250bd672c6f1
+transaction_created_at = 2026-05-07T20:04:20.722181+00:00
+  create_user            started_at=2026-05-07T20:04:19.824Z   472.48 ms
+  create_account         started_at=2026-05-07T20:04:20.296Z   410.16 ms
+  deposit_commit         started_at=2026-05-07T20:04:20.707Z   410.36 ms
+
+Read from us-east-2 NLB (with warm connection)
+attempt 1: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:21.117Z  1398.62 ms
+attempt 2: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:22.571Z  1380.29 ms
+attempt 3: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:24.003Z  1378.94 ms
+attempt 4: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:25.437Z  1382.63 ms
+attempt 5: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:26.873Z  1379.48 ms
+attempt 6: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:28.304Z  1380.11 ms
+attempt 7: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:29.736Z  1383.63 ms
+attempt 8: HIT  balance=$ 10,000.00 started_at=2026-05-07T20:04:31.174Z  1377.38 ms
